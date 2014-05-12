@@ -9,4 +9,9 @@ Besides that, I think I'll look into ARP spoofing
 
 Who knows, I might end up coding some for arpON xD
 
-Make the force be with you
+Remember to have jnetpcap installed
+
+Oh yeah, you compile by typing following:
+sudo java -cp . mySimpleSniffer
+
+May the source be with you
