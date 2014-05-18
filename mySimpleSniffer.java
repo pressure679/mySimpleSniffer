@@ -6,6 +6,7 @@ import org.jnetpcap.PcapHeader;
 import org.jnetpcap.nio.JBuffer;
 import org.jnetpcap.packet.PcapPacket;
 
+// to format data and get headers
 import org.jnetpcap.packet.format.FormatUtils;
 import org.jnetpcap.packet.Payload;
 import org.jnetpcap.protocol.lan.Ethernet;
@@ -18,6 +19,7 @@ import org.jnetpcap.packet.PcapPacketHandler;
 import org.jnetpcap.protocol.network.Ip4;
 import org.jnetpcap.packet.JPacket;
 
+// For writing package data to file
 import java.io.IOException;
 import java.io.File;
 import java.io.FileWriter;
@@ -44,8 +46,23 @@ public class mySimpleSniffer {
 	    return;
 	}
 
+	/* Java simply won't get host address..
 	// enum networkinterfaces to get host address
+	int x = 0;
+	InetAddress[] lc = new InetAddress[3];
+	NetworkInterface neti = NetworkInterface.getByName("wlan0");
+	Enumeration e = neti.getInetAddresses();
+	while(e.hasMoreElements()) {
+	    NetworkInterface n = (NetworkInterface) e.nextElement();
+	    Enumeration ee = n.getInetAddresses();
+	    while (ee.hasMoreElements()) {
+		lc[x] = (InetAddress) ee.nextElement();
+		x++;
+	    }
+	}
 	final String myinet = InetAddress.getLocalHost().getHostAddress();
+	*/
+	final byte[] myinet = {(byte)192, (byte)168, (byte)0, (byte)100};
 
 	// initiate packet capture objects
 	PcapHeader pcapheader = new PcapHeader();
@@ -55,11 +72,14 @@ public class mySimpleSniffer {
 
 	// packet handler for packet capture
 	PcapPacketHandler<String> pcappackethandler = new PcapPacketHandler<String>() {
+
 	    // objects to get packet headers
 	    StringBuffer myIps = new StringBuffer();
 	    JBuffer jbuffer = pcappacket.getHeader(new Payload());
 	    Ethernet eth = new Ethernet();
 	    Icmp icmp = new Icmp();
+	    byte[] sip = new byte[3];
+	    byte[] dip = new byte[3];
 
 	    public void nextPacket(PcapPacket pcappacket, String user) {
 
@@ -70,13 +90,45 @@ public class mySimpleSniffer {
 		    System.out.println("Ethernet:\t" + eth.typeEnum());
 		}
 		if (pcappacket.hasHeader(ip)) {
-		    System.out.println(ip.source() + "\n" +
-				       ip.destination() + "\n" +
-				       myinet);
-		    if (ip.source().toString() != myinet &&
-			ip.destination().toString() != myinet) {
-			System.out.println("IP:\t\t" + ip.typeEnum());
 
+		    // myinet is not set to host address
+		    // but loopback address
+		    if (ip.source() != myinet &&
+			ip.destination() != myinet) {
+			System.out.println("IP:\t\t" + ip.typeEnum());
+			sip = ip.source();
+			dip = ip.destination();
+			System.out.print("src:\t-\t");
+			for (int x = 0; x < 4; x++) {
+			    if (sip[x] < 0) {
+				System.out.print(256 + sip[x]);
+				if (x < 3) {
+				    System.out.print(".");
+				}
+			    } else {
+				System.out.print(256 - sip[x]);
+				if (x < 3) {
+				    System.out.print(".");
+				}
+			    }
+			}
+			System.out.println();
+			System.out.print("dst:\t\t");
+			for (int x = 0; x < 4; x++) {
+			    if (dip[x] < 0) {
+				System.out.print(256 + dip[x]);
+				if (x < 3) {
+				    System.out.print(".");
+				}
+			    } else {
+				System.out.print(256 - dip[x]);
+				if (x < 3) {
+				    System.out.print(".");
+				}
+			    }
+			}
+			System.out.println();
+			
 			// supposed to get ip route,
 			// somewhat like traceroute
 			/*
@@ -86,51 +138,40 @@ public class mySimpleSniffer {
 			    System.out.println("No subheaders");
 			}
 			*/
-
-			myIps.append(FormatUtils.ip(ip.source()) +
-				     "\n" +
-				     FormatUtils.ip(ip.destination()) +
-				     "\n");
-			System.out.println("\n\t*\t*\t*");
-			System.out.println("src: " + FormatUtils.ip(ip.source()));
-			System.out.println("dst: " + FormatUtils.ip(ip.destination()));
-			System.out.println("\n\t*\t*\t*");
-		    } else {
-			System.out.println("src: " + FormatUtils.ip(ip.source()));
-			System.out.println("dst: " + FormatUtils.ip(ip.destination()));
 		    }
 		} else {
 		    System.out.println("No header");
 		    System.out.println(pcappacket.getCaptureHeader());
 		    return;
 		}
-
+		    
 		// Write files when you can get
 		// ip route, meaningful hex dump payload,
 		// and maybe decrypted data
 		/*
-		DateFormat dateFormat = new SimpleDateFormat("dd-MM-yyy_HH:mm:ss");
-		Date date = new Date();
-		String myTime = dateFormat.format(date).toString();
-		try {
-		    File myFile = new File(myTime);
-		    FileWriter fw = new FileWriter(myFile);
-		    StringBuffer strbuff = new StringBuffer();
-		    // doesn't write payload
-		    fw.write(myIps.toString() +
-			     strbuff.toString() +
-			     "\n");
-		    fw.close();
-		} catch (IOException e) {
-		    e.printStackTrace();
-		}
+		  DateFormat dateFormat = new SimpleDateFormat("dd-MM-yyy_HH:mm:ss");
+		  Date date = new Date();
+		  String myTime = dateFormat.format(date).toString();
+		  try {
+		  File myFile = new File(myTime);
+		  FileWriter fw = new FileWriter(myFile);
+		  StringBuffer strbuff = new StringBuffer();
+		  // doesn't write payload
+		  fw.write(myIps.toString() +
+		  strbuff.toString() +
+		  "\n");
+		  fw.close();
+		  } catch (IOException e) {
+		  e.printStackTrace();
+		  }
 		*/
 
+		System.out.println();
+		System.out.println("-");
 		System.out.println();
 	    }
 	};
 	pcap.loop(Integer.parseInt(args[0]), pcappackethandler, "pressure");
 	pcap.close();
-	System.out.println(myinet);
     }
 }

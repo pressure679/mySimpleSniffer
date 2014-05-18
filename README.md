@@ -1,5 +1,7 @@
 This is my first repository, so I guess this will have a GPL license, dunno how though, hope I don't violate any copyrights..
 
+* code needs to automatically add host address at line 65 *
+
 I started with project over a year ago, and followed much of the default jnetpcap guide, and now I've begun coding on my own, pretty fun :)
 The code is commented with the associated chapter in the jnetpcap guide.
 
