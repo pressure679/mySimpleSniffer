@@ -1,2 +1,0 @@
-check-syntax:
-	javac mySimpleSnifer.java ${CHK_SOURCES}
