@@ -61,7 +61,7 @@ public class mySimpleSniffer {
     InetAddress[] inets = new InetAddress[10];
     Enumeration e = NetworkInterface.getNetworkInterfaces();
     int counter = 0;
-				byte[] mymacget = {(byte)52, (byte)35, (byte)141, (byte)33, (byte)30, (byte)67};
+				byte[] mymacget = new byte[5];
     while (e.hasMoreElements()) {
       NetworkInterface n = (NetworkInterface) e.nextElement();
       Enumeration ee = n.getInetAddresses();
