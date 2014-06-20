@@ -103,9 +103,9 @@ public class mySimpleSniffer {
 								}
 								if (pcappacket.hasHeader(eth) &&
 												readdata == true) {
-												System.out.println("Ethernet type:\t" + eth.typeEnum());
-												System.out.println("Ethernet src:\t" + FormatUtils.mac(eth.source()));
-												System.out.println("Ethernet dst:\t" + FormatUtils.mac(eth.destination()));
+										System.out.println("Ethernet type:\t" + eth.typeEnum());
+										System.out.println("Ethernet src:\t" + FormatUtils.mac(eth.source()));
+										System.out.println("Ethernet dst:\t" + FormatUtils.mac(eth.destination()));
 								}
 								if (pcappacket.hasHeader(tcp) &&
 												readdata == true) {
