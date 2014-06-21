@@ -55,8 +55,7 @@ public class mySimpleSniffer {
     StringBuilder errbuf = new StringBuilder();
     Pcap pcap = Pcap.openLive(args[0], snaplen, flags, timeout, errbuf);
     if (pcap == null) {
-      System.err.printf("Error while opening device for capture: " 
-																								+ errbuf.toString());  
+      System.err.printf("Error while opening device for capture: " + errbuf.toString());  
       return;
     }
     // Get local address
