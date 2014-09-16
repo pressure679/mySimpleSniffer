@@ -28,10 +28,12 @@ import org.jnetpcap.protocol.lan.Ethernet;
 import org.jnetpcap.protocol.network.Icmp;
 import org.jnetpcap.protocol.tcpip.Tcp;
 import org.jnetpcap.protocol.tcpip.Udp;
-// import org.jnetpcap.protocol.network.Arp;
+import org.jnetpcap.protocol.network.Arp;
+import org.jnetpcap.protocol.network.Rip;
 // import org.jnetpcap.protocol.voip;
 // import org.jnetpcap.protocol.vpn;
 // import org.jnetpcap.protocol.wan;
+import org.jnetpcap.packet.JRegistry;
 
 // chapter 2.7
 import org.jnetpcap.packet.PcapPacketHandler;
@@ -61,85 +63,133 @@ import org.jnetpcap.packet.format.FormatUtils;
 // import java.util.ArrayList;
 import java.util.Arrays;
 
-public class mySimpleSniffer {
+public class sniffer {
+
+	public static Ip4 ip = new Ip4();
+	public static Ethernet eth = new Ethernet();
+	public static Tcp tcp = new Tcp();
+	public static Udp udp = new Udp();
+	/*	public static Rip rip = new Rip() {
+			void printheader() {
+			System.out.println(rip.getHeader());
+			}
+			}; */
+	
+	public static Arp arp = new Arp();
+	public static Payload payload = new Payload();
+	public static byte[] payloadContent;
+	public static boolean readdata = false;	public static byte[] myinet = new byte[3];
+	public static byte[] mymac = new byte[5];
+
+	public static InetAddress inet;
+	public static Enumeration e;
+	public static NetworkInterface n;
+	public static Enumeration ee;
+
   public static void main(String args[]) throws Exception {
     // chapter 2.2-4
     // initiate packet capture device
-    int snaplen = Pcap.DEFAULT_SNAPLEN;
-    int flags = Pcap.MODE_PROMISCUOUS;
-    int timeout = Pcap.DEFAULT_TIMEOUT;
-    StringBuilder errbuf = new StringBuilder();
+    final int snaplen = Pcap.DEFAULT_SNAPLEN;
+    final int flags = Pcap.MODE_PROMISCUOUS;
+    final int timeout = Pcap.DEFAULT_TIMEOUT;
+    final StringBuilder errbuf = new StringBuilder();
     Pcap pcap = Pcap.openLive(args[0], snaplen, flags, timeout, errbuf);
     if (pcap == null) {
-      System.err.printf("Error while opening device for capture: " + errbuf.toString());  
+      System.out.println("Error while opening device for capture: " + errbuf.toString());  
       return;
     }
-    // Get local address
-    InetAddress[] inets = new InetAddress[10];
-    Enumeration e = NetworkInterface.getNetworkInterfaces();
-    int counter = -1;
-    byte[] mymacget = new byte[5];
-    while (e.hasMoreElements()) {
-      NetworkInterface n = (NetworkInterface) e.nextElement();
-      Enumeration ee = n.getInetAddresses();
-      if (counter == 1) mymacget = n.getHardwareAddress();
-      while (ee.hasMoreElements()) {
-	counter++;
-	inets[counter] = (InetAddress) ee.nextElement();
-      }
-    }
-    final byte[] myinet = inets[1].getAddress();
-    final byte[] mymac = mymacget;
-    final Ip4 ip = new Ip4();
-    final Ethernet eth = new Ethernet();
-    final Tcp tcp = new Tcp();
-    final Udp udp = new Udp();
-    final Arp arp = new Arp();
-    final Icmp icmp = new Icmp();
-    final Payload payload = new Payload();
-    // packet handler for packet capture
-    PcapPacketHandler<String> pcappackethandler = new PcapPacketHandler<String>() {
-      byte[] payloadContent;
-      boolean readdata = false;
-      public void nextPacket(PcapPacket pcappacket, String user) {
-        if (pcappacket.hasHeader(ip)) {
-          if (ip.source() != myinet &&
-              ip.destination() != myinet &&
-              ip.source()[3] != (byte)1 &&
-              ip.destination()[3] != (byte)1) {
-            System.out.println("IP type:\t" + ip.typeEnum());
-            System.out.println("IP src:\t-\t" + FormatUtils.ip(ip.source()));
-            System.out.println("IP dst:\t-\t" + FormatUtils.ip(ip.destination()));
-            readdata = true;
-          }
-        }
-        if (pcappacket.hasHeader(eth) &&
-            readdata == true) {
-          System.out.println("Ethernet type:\t" + eth.typeEnum());
-          System.out.println("Ethernet src:\t" + FormatUtils.mac(eth.source()));
-          System.out.println("Ethernet dst:\t" + FormatUtils.mac(eth.destination()));
-        }
-        if (pcappacket.hasHeader(tcp) &&
-            readdata == true) {
-          System.out.println("TCP port:\t" + tcp.destination());
-        } else if (pcappacket.hasHeader(udp) &&
-                   readdata == true) {
-          System.out.println("UDP port:\t" + udp.destination());
-        }
-        if (pcappacket.hasHeader(payload) && 
-            readdata == true) {
-          payloadContent = payload.getPayload();
-          System.out.println("Payload:\n");
-          for (int x = 0; x < payloadContent.length; x++) {
-            System.out.print("%02X" + payloadContent[x] + " ");
-          }
-        }
-        if (readdata) System.out.println("-\t-\t-\t-\t-");
-        readdata = false;
-      }
-    };
-    pcap.loop(Integer.parseInt(args[1]), pcappackethandler, "pressure");
-    pcap.close();
-  }
-  // public static void writeDump(
+
+		// Get local address
+		e = NetworkInterface.getNetworkInterfaces();
+		while (e.hasMoreElements()) {
+			n = (NetworkInterface)e.nextElement();
+			if (args[0].equals(n.getDisplayName())) {
+				ee = n.getInetAddresses();
+				mymac = n.getHardwareAddress();
+				while (ee.hasMoreElements()) {
+					inet = (InetAddress)ee.nextElement();
+					System.out.println(n.getDisplayName() + " " + inet);
+				}
+			}
+		}
+		// Get IPv4 manually instead of looping through all IP's
+		// myinet = inet.getAddress();
+
+		// packet handler for packet capture
+		pcap.loop(Integer.parseInt(args[1]), pcappackethandler, "pressure");
+		pcap.close();
+	}
+
+	public static PcapPacketHandler<String> pcappackethandler = new PcapPacketHandler<String>() {
+		public void nextPacket(PcapPacket pcappacket, String user) {
+			if (pcappacket.hasHeader(ip)) {
+				if (FormatUtils.ip(ip.source()) != FormatUtils.ip(myinet) &&
+						FormatUtils.ip(ip.destination()) != FormatUtils.ip(myinet)) {
+					System.out.println();
+					System.out.println("IP type:\t" + ip.typeEnum());
+					System.out.println("IP src:\t-\t" + FormatUtils.ip(ip.source()));
+					System.out.println("IP dst:\t-\t" + FormatUtils.ip(ip.destination()));
+					readdata = true;
+				}
+			}
+			if (pcappacket.hasHeader(eth) &&
+					readdata == true) {
+				System.out.println("Ethernet type:\t" + eth.typeEnum());
+				System.out.println("Ethernet src:\t" + FormatUtils.mac(eth.source()));
+				System.out.println("Ethernet dst:\t" + FormatUtils.mac(eth.destination()));
+			}
+			if (pcappacket.hasHeader(tcp) &&
+					readdata == true) {
+				System.out.println("TCP src port:\t" + tcp.source());
+				System.out.println("TCP dst port:\t" + tcp.destination());
+			} else if (pcappacket.hasHeader(udp) &&
+								 readdata == true) {
+				System.out.println("UDP src port:\t" + udp.source());
+				System.out.println("UDP dst port:\t" + udp.destination());
+			}
+			/*			if (pcappacket.hasHeader(rip) &&
+							readdata == true) {
+							System.out.println("RIP count:\t" + rip.count());
+							System.out.println("RIP header:\t" + rip.getHeader());
+							} */
+			if (pcappacket.hasHeader(arp) &&
+					readdata == true) {
+							
+				// System.out.println("ARP decode header:\t" + arp.decodeHeader());
+				// System.out.println("ARP hardware type:\t" + arp. hardwareType());
+				// System.out.println("ARP hw type descr:\t" + arp.hardwareTypeDescription());
+				// System.out.println("ARP hw type enum:\t" + arp.hardwareTypeEnum());
+				// System.out.println("ARP hlen:\t-\t" + arp.hlen());
+				// System.out.println("ARP operation:\t-\t" + arp.operation());
+				// System.out.println("ARP plen:\t-\t" + arp.plen());
+				// System.out.println("ARP protocol type:\t" + arp.protocolType());
+				// System.out.println("ARP prtcl type descr:\t" + arp.protocolTypeDescription());
+				// System.out.println("ARP prtcl type enum:\t" + arp.protocolTypeEnum());
+				// System.out.println("ARP sha:\t-\t" + FormatUtils.mac(arp.sha()));
+				// System.out.println("ARP sha length:\t-\t" + arp.shaLength());
+				// System.out.println("ARP spa:\t-\t" + FormatUtils.ip(arp.spa()));
+				// System.out.println("ARP spa length:\t-\t" + arp.spaLength());
+				// System.out.println("ARP spa offset:\t-\t" + arp.spaOffset());
+				// System.out.println("ARP tha:\t-\t" + FormatUtils.mac(arp.tha()));
+				// System.out.println("ARP tha length:\t-\t" + arp.thaLength());
+				// System.out.println("ARP tha offset:\t-\t" + arp.thaOffset());
+				// System.out.println("ARP tpa:\t-\t" + FormatUtils.ip(arp.tpa()));
+				// System.out.println("ARP tpa length:\t-\t" + arp.tpaLength());
+				// System.out.println("ARP tpa offset:\t-\t" + arp.tpaOffset());
+				System.out.println("ARP Packet!");
+				readdata = true;
+			}
+			if (pcappacket.hasHeader(payload) && 
+					readdata == true) {
+				payloadContent = payload.getPayload();
+				System.out.println("Payload:\n");
+				for (int x = 0; x < payloadContent.length; x++) {
+					System.out.print(payload.toHexdump());
+				}
+			}
+			if (readdata == true) System.out.println("-\t-\t-\t-\t-");
+			readdata = false;
+		}
+	};
+	// public static void writeDump(
 }
