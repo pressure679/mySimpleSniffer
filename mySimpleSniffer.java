@@ -14,6 +14,8 @@
 //    You should have received a copy of the GNU General Public License
 //    along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+// I highly used http://jnetpcap.com/?q=examples and http://jnetpcap.com/?q=tutorial to make this
+
 import org.jnetpcap.Pcap;
 
 // chapter 2.6
